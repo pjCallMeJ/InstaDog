@@ -1,0 +1,53 @@
+{
+  "kind": "collectionType",
+  "collectionName": "care_routines",
+  "info": {
+    "singularName": "care-routine",
+    "pluralName": "care-routines",
+    "displayName": "Care Routine",
+    "description": "รายการดูแลประจำวัน เช่น อาหารเช้า เดินเช้า หวีขน"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "dog": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::dog.dog",
+      "inversedBy": "careRoutines"
+    },
+    "title": {
+      "type": "string",
+      "required": true,
+      "maxLength": 80
+    },
+    "scheduledTime": {
+      "type": "string",
+      "maxLength": 40
+    },
+    "category": {
+      "type": "enumeration",
+      "enum": ["food", "walk", "groom", "health"],
+      "required": true
+    },
+    "icon": {
+      "type": "string",
+      "default": "check_circle"
+    },
+    "order": {
+      "type": "integer",
+      "default": 0
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true
+    },
+    "logs": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::care-log.care-log",
+      "mappedBy": "routine"
+    }
+  }
+}

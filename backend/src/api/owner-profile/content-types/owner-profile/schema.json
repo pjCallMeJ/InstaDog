@@ -1,0 +1,53 @@
+{
+  "kind": "collectionType",
+  "collectionName": "owner_profiles",
+  "info": {
+    "singularName": "owner-profile",
+    "pluralName": "owner-profiles",
+    "displayName": "Owner Profile",
+    "description": "ข้อมูลเจ้าของสุนัข แยกออกจากตาราง user เพื่อจัดการ media และสิทธิ์ได้ง่าย"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "user": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "ownerProfile"
+    },
+    "displayName": {
+      "type": "string",
+      "required": true,
+      "maxLength": 50
+    },
+    "bio": {
+      "type": "text",
+      "maxLength": 150
+    },
+    "avatar": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"]
+    },
+    "phone": {
+      "type": "string",
+      "maxLength": 30,
+      "private": true
+    },
+    "gender": {
+      "type": "enumeration",
+      "enum": ["male", "female", "other", "unspecified"],
+      "default": "unspecified"
+    },
+    "website": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "isPublic": {
+      "type": "boolean",
+      "default": true
+    }
+  }
+}

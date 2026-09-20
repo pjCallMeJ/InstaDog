@@ -1,0 +1,36 @@
+{
+  "kind": "collectionType",
+  "collectionName": "chat_threads",
+  "info": {
+    "singularName": "chat-thread",
+    "pluralName": "chat-threads",
+    "displayName": "Chat Thread",
+    "description": "ห้องสนทนากับ AI Bark หนึ่งห้องต่อหนึ่งสุนัข"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "dog": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::dog.dog"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 80,
+      "default": "Vet AI 2.0"
+    },
+    "messages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::chat-message.chat-message",
+      "mappedBy": "thread"
+    }
+  }
+}

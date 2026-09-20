@@ -1,0 +1,37 @@
+{
+  "kind": "collectionType",
+  "collectionName": "chat_messages",
+  "info": {
+    "singularName": "chat-message",
+    "pluralName": "chat-messages",
+    "displayName": "Chat Message",
+    "description": "ข้อความในห้อง AI Bark ทั้งฝั่งผู้ใช้และฝั่ง AI"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "thread": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::chat-thread.chat-thread",
+      "inversedBy": "messages"
+    },
+    "sender": {
+      "type": "enumeration",
+      "enum": ["user", "ai"],
+      "required": true
+    },
+    "text": {
+      "type": "text",
+      "maxLength": 4000
+    },
+    "isEmergency": {
+      "type": "boolean",
+      "default": false
+    },
+    "payload": {
+      "type": "json"
+    }
+  }
+}

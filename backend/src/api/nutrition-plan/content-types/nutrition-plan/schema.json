@@ -1,0 +1,51 @@
+{
+  "kind": "collectionType",
+  "collectionName": "nutrition_plans",
+  "info": {
+    "singularName": "nutrition-plan",
+    "pluralName": "nutrition-plans",
+    "displayName": "Nutrition Plan",
+    "description": "แผนโภชนาการของสุนัข แสดงในแท็บโภชนาการของ AI Bark"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "dog": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::dog.dog",
+      "inversedBy": "nutritionPlan"
+    },
+    "dailyKcal": {
+      "type": "integer",
+      "default": 1150,
+      "min": 0
+    },
+    "dryFoodGram": {
+      "type": "integer",
+      "default": 320,
+      "min": 0
+    },
+    "mealsPerDay": {
+      "type": "integer",
+      "default": 2,
+      "min": 1
+    },
+    "proteinPct": {
+      "type": "integer",
+      "default": 26,
+      "min": 0,
+      "max": 100
+    },
+    "fatPct": {
+      "type": "integer",
+      "default": 14,
+      "min": 0,
+      "max": 100
+    },
+    "forbiddenFoods": {
+      "type": "json"
+    }
+  }
+}

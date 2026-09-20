@@ -1,0 +1,32 @@
+# Secrets — never commit real keys
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Dependencies
+node_modules/
+.dart_tool/
+.pub-cache/
+.pub/
+.flutter-plugins-dependencies
+
+# Build outputs
+build/
+dist/
+*.apk
+*.aab
+*.ipa
+
+# Strapi local data
+.tmp/
+.strapi/
+.strapi-updater.json
+backend/public/uploads/
+
+# IDE / OS
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+*.log

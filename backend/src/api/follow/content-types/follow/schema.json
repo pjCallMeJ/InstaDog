@@ -1,0 +1,31 @@
+{
+  "kind": "collectionType",
+  "collectionName": "follows",
+  "info": {
+    "singularName": "follow",
+    "pluralName": "follows",
+    "displayName": "Follow",
+    "description": "ผู้ใช้ติดตามสุนัข ปุ่ม 'ติดตาม' บนหน้าโปรไฟล์"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "follower": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "dog": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::dog.dog",
+      "inversedBy": "followers"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["accepted", "pending"],
+      "default": "accepted"
+    }
+  }
+}

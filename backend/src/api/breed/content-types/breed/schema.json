@@ -1,0 +1,39 @@
+{
+  "kind": "collectionType",
+  "collectionName": "breeds",
+  "info": {
+    "singularName": "breed",
+    "pluralName": "breeds",
+    "displayName": "Breed",
+    "description": "สายพันธุ์สุนัข ใช้กับชิปบนหน้าโปรไฟล์และตัวกรองหน้าสำรวจ"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "nameTh": {
+      "type": "string",
+      "required": true,
+      "maxLength": 80
+    },
+    "nameEn": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "nameEn",
+      "required": true
+    },
+    "icon": {
+      "type": "string",
+      "default": "pets"
+    },
+    "dogs": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::dog.dog",
+      "mappedBy": "breed"
+    }
+  }
+}

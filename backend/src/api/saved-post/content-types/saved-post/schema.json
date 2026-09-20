@@ -1,0 +1,25 @@
+{
+  "kind": "collectionType",
+  "collectionName": "saved_posts",
+  "info": {
+    "singularName": "saved-post",
+    "pluralName": "saved-posts",
+    "displayName": "Saved Post",
+    "description": "โพสต์ที่ผู้ใช้กดบันทึก (ไอคอน bookmark บนการ์ดฟีด)"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "post": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::post.post"
+    }
+  }
+}

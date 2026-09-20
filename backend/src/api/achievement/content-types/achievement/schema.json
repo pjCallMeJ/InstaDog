@@ -1,0 +1,39 @@
+{
+  "kind": "collectionType",
+  "collectionName": "achievements",
+  "info": {
+    "singularName": "achievement",
+    "pluralName": "achievements",
+    "displayName": "Achievement",
+    "description": "เหรียญตราความสำเร็จที่สุนัขปลดล็อกได้"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "code": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "maxLength": 60
+    },
+    "title": {
+      "type": "string",
+      "required": true,
+      "maxLength": 80
+    },
+    "description": {
+      "type": "text",
+      "maxLength": 200
+    },
+    "icon": {
+      "type": "string",
+      "default": "emoji_events"
+    },
+    "colorHex": {
+      "type": "string",
+      "maxLength": 9,
+      "default": "#C89B5C"
+    }
+  }
+}

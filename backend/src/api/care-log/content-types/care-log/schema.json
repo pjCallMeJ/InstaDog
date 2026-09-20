@@ -1,0 +1,32 @@
+{
+  "kind": "collectionType",
+  "collectionName": "care_logs",
+  "info": {
+    "singularName": "care-log",
+    "pluralName": "care-logs",
+    "displayName": "Care Log",
+    "description": "สถานะติ๊กเสร็จของรายการดูแล แยกตามวัน"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "routine": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::care-routine.care-routine",
+      "inversedBy": "logs"
+    },
+    "date": {
+      "type": "date",
+      "required": true
+    },
+    "isCompleted": {
+      "type": "boolean",
+      "default": false
+    },
+    "completedAt": {
+      "type": "datetime"
+    }
+  }
+}

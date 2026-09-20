@@ -1,0 +1,138 @@
+{
+  "kind": "collectionType",
+  "collectionName": "dogs",
+  "info": {
+    "singularName": "dog",
+    "pluralName": "dogs",
+    "displayName": "Dog",
+    "description": "โปรไฟล์สุนัข ซึ่งเป็นตัวตนหลักของ InstaDog"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "owner": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "dogs"
+    },
+    "handle": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "maxLength": 40,
+      "regex": "^[a-z0-9._]{3,40}$"
+    },
+    "nameTh": {
+      "type": "string",
+      "required": true,
+      "maxLength": 50
+    },
+    "nameEn": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "breed": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::breed.breed",
+      "inversedBy": "dogs"
+    },
+    "gender": {
+      "type": "enumeration",
+      "enum": ["male", "female"],
+      "default": "male"
+    },
+    "birthDate": {
+      "type": "date"
+    },
+    "weight": {
+      "type": "decimal",
+      "min": 0
+    },
+    "vaccineStatus": {
+      "type": "string",
+      "maxLength": 60,
+      "default": "วัคซีนครบถ้วน"
+    },
+    "bio": {
+      "type": "text",
+      "maxLength": 200
+    },
+    "avatar": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"]
+    },
+    "coverImage": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"]
+    },
+    "isPublic": {
+      "type": "boolean",
+      "default": true
+    },
+    "isPrimary": {
+      "type": "boolean",
+      "default": false
+    },
+    "seedFollowersCount": {
+      "type": "integer",
+      "default": 0,
+      "min": 0
+    },
+    "seedFollowingCount": {
+      "type": "integer",
+      "default": 0,
+      "min": 0
+    },
+    "seedPostsCount": {
+      "type": "integer",
+      "default": 0,
+      "min": 0
+    },
+    "accumulatedKm": {
+      "type": "decimal",
+      "default": 0,
+      "min": 0
+    },
+    "posts": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::post.post",
+      "mappedBy": "dog"
+    },
+    "stories": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::story.story",
+      "mappedBy": "dog"
+    },
+    "followers": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::follow.follow",
+      "mappedBy": "dog"
+    },
+    "achievements": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::dog-achievement.dog-achievement",
+      "mappedBy": "dog"
+    },
+    "careRoutines": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::care-routine.care-routine",
+      "mappedBy": "dog"
+    },
+    "nutritionPlan": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::nutrition-plan.nutrition-plan",
+      "mappedBy": "dog"
+    }
+  }
+}

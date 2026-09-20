@@ -1,0 +1,29 @@
+{
+  "kind": "collectionType",
+  "collectionName": "story_views",
+  "info": {
+    "singularName": "story-view",
+    "pluralName": "story-views",
+    "displayName": "Story View",
+    "description": "บันทึกว่าใครดูสตอรี่แล้ว ใช้ตัดสินวงแหวน 'ยังไม่ดู'"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "story": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::story.story",
+      "inversedBy": "views"
+    },
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "viewedAt": {
+      "type": "datetime"
+    }
+  }
+}

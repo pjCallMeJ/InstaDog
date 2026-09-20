@@ -1,0 +1,66 @@
+{
+  "kind": "collectionType",
+  "collectionName": "notifications",
+  "info": {
+    "singularName": "notification",
+    "pluralName": "notifications",
+    "displayName": "Notification",
+    "description": "รายการบนหน้าแจ้งเตือน ทั้งแท็บ 'คุณ' และ 'กำลังติดตาม'"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "recipient": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "actor": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "actorDog": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::dog.dog"
+    },
+    "type": {
+      "type": "enumeration",
+      "enum": [
+        "like",
+        "comment",
+        "follow",
+        "mention",
+        "follow_request",
+        "story_reply",
+        "care_reminder"
+      ],
+      "required": true
+    },
+    "scope": {
+      "type": "enumeration",
+      "enum": ["you", "following"],
+      "default": "you"
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 240
+    },
+    "post": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::post.post"
+    },
+    "comment": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::comment.comment"
+    },
+    "isRead": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

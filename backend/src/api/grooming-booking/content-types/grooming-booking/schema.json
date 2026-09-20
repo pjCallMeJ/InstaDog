@@ -1,0 +1,46 @@
+{
+  "kind": "collectionType",
+  "collectionName": "grooming_bookings",
+  "info": {
+    "singularName": "grooming-booking",
+    "pluralName": "grooming-bookings",
+    "displayName": "Grooming Booking",
+    "description": "การจองร้านกรูมมิ่งจากแท็บ AI ทรงขน"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "dog": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::dog.dog"
+    },
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "style": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::grooming-style.grooming-style"
+    },
+    "salonName": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "scheduledAt": {
+      "type": "datetime"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["pending", "confirmed", "cancelled", "done"],
+      "default": "pending"
+    },
+    "note": {
+      "type": "text",
+      "maxLength": 400
+    }
+  }
+}
