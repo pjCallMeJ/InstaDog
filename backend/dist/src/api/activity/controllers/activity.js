@@ -24,7 +24,7 @@ async function ensureTodayActivity(dogId) {
 exports.default = {
     /** GET /api/dogs/:ref/activity/today — วงแหวนเป้าหมายเดินเล่นวันนี้ */
     async today(ctx) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e;
         const user = (0, viewer_1.requireUser)(ctx);
         if (!user)
             return;
@@ -46,6 +46,7 @@ exports.default = {
                 progress: goal > 0 ? Math.min(1, steps / goal) : 0,
                 distanceKm: Number((_c = row.distanceKm) !== null && _c !== void 0 ? _c : 0),
                 calories: Number((_d = row.calories) !== null && _d !== void 0 ? _d : 0),
+                note: (_e = row.note) !== null && _e !== void 0 ? _e : '',
                 activeWalk: activeWalk
                     ? { documentId: activeWalk.documentId, startedAt: activeWalk.startedAt }
                     : null,
@@ -117,7 +118,7 @@ exports.default = {
      * แอปส่งค่าที่นับได้จากตัวจับเวลาฝั่ง client มาสรุป แล้วรวมเข้ากิจกรรมของวันนี้
      */
     async stopWalk(ctx) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
         const user = (0, viewer_1.requireUser)(ctx);
         if (!user)
             return;
@@ -139,21 +140,29 @@ exports.default = {
         const calories = Math.max(0, Number((_g = body.calories) !== null && _g !== void 0 ? _g : Math.round(steps * 0.045)));
         await strapi.db.query('api::walk-session.walk-session').update({
             where: { id: walk.id },
-            data: { endedAt, durationSec, steps, distanceKm, calories, status: 'finished' },
+            data: {
+                endedAt,
+                durationSec,
+                steps,
+                distanceKm,
+                calories,
+                status: 'finished',
+                note: typeof body.note === 'string' ? body.note.trim().slice(0, 500) : (_h = walk.note) !== null && _h !== void 0 ? _h : null,
+            },
         });
         const activity = await ensureTodayActivity(walk.dog.id);
         await strapi.db.query('api::daily-activity.daily-activity').update({
             where: { id: activity.id },
             data: {
-                steps: Number((_h = activity.steps) !== null && _h !== void 0 ? _h : 0) + steps,
-                distanceKm: Number((Number((_j = activity.distanceKm) !== null && _j !== void 0 ? _j : 0) + distanceKm).toFixed(2)),
-                calories: Number((_k = activity.calories) !== null && _k !== void 0 ? _k : 0) + calories,
+                steps: Number((_j = activity.steps) !== null && _j !== void 0 ? _j : 0) + steps,
+                distanceKm: Number((Number((_k = activity.distanceKm) !== null && _k !== void 0 ? _k : 0) + distanceKm).toFixed(2)),
+                calories: Number((_l = activity.calories) !== null && _l !== void 0 ? _l : 0) + calories,
             },
         });
         await strapi.db.query('api::dog.dog').update({
             where: { id: walk.dog.id },
             data: {
-                accumulatedKm: Number((Number((_l = walk.dog.accumulatedKm) !== null && _l !== void 0 ? _l : 0) + distanceKm).toFixed(2)),
+                accumulatedKm: Number((Number((_m = walk.dog.accumulatedKm) !== null && _m !== void 0 ? _m : 0) + distanceKm).toFixed(2)),
             },
         });
         ctx.body = { data: { documentId: walk.documentId, durationSec, steps, distanceKm, calories } };
@@ -172,7 +181,7 @@ exports.default = {
         });
         ctx.body = {
             data: rows.map((w) => {
-                var _a, _b, _c, _d;
+                var _a, _b, _c, _d, _e;
                 return ({
                     documentId: w.documentId,
                     startedAt: w.startedAt,
@@ -181,8 +190,9 @@ exports.default = {
                     steps: w.steps,
                     distanceKm: Number((_a = w.distanceKm) !== null && _a !== void 0 ? _a : 0),
                     calories: w.calories,
-                    routePhotoUrl: (0, serializers_1.absoluteUrl)((_b = w.routePhoto) === null || _b === void 0 ? void 0 : _b.url),
-                    dogNameTh: (_d = (_c = w.dog) === null || _c === void 0 ? void 0 : _c.nameTh) !== null && _d !== void 0 ? _d : null,
+                    note: (_b = w.note) !== null && _b !== void 0 ? _b : '',
+                    routePhotoUrl: (0, serializers_1.absoluteUrl)((_c = w.routePhoto) === null || _c === void 0 ? void 0 : _c.url),
+                    dogNameTh: (_e = (_d = w.dog) === null || _d === void 0 ? void 0 : _d.nameTh) !== null && _e !== void 0 ? _e : null,
                 });
             }),
         };
@@ -313,5 +323,133 @@ exports.default = {
                 stepGoal: goal,
             },
         };
+    },
+    /** PUT /api/activity/today/note — บันทึกโน้ตประจำวัน */
+    async updateTodayNote(ctx) {
+        var _a, _b, _c, _d;
+        const user = (0, viewer_1.requireUser)(ctx);
+        if (!user)
+            return;
+        const dog = await resolveDog(ctx, user.id);
+        if (!dog)
+            return ctx.notFound('ไม่พบสุนัข');
+        if (((_a = dog.owner) === null || _a === void 0 ? void 0 : _a.id) !== user.id)
+            return ctx.forbidden('แก้โน้ตได้เฉพาะสุนัขของตัวเอง');
+        const body = (_d = (_c = (_b = ctx.request.body) === null || _b === void 0 ? void 0 : _b.data) !== null && _c !== void 0 ? _c : ctx.request.body) !== null && _d !== void 0 ? _d : {};
+        const note = typeof body.note === 'string' ? body.note.trim().slice(0, 500) : '';
+        const row = await ensureTodayActivity(dog.id);
+        await strapi.db.query('api::daily-activity.daily-activity').update({
+            where: { id: row.id },
+            data: { note: note || null },
+        });
+        ctx.body = { data: { date: row.date, note } };
+    },
+    /** POST /api/care-routines — เพิ่มรายการดูแล */
+    async createCareRoutine(ctx) {
+        var _a, _b, _c, _d, _e;
+        const user = (0, viewer_1.requireUser)(ctx);
+        if (!user)
+            return;
+        const body = (_c = (_b = (_a = ctx.request.body) === null || _a === void 0 ? void 0 : _a.data) !== null && _b !== void 0 ? _b : ctx.request.body) !== null && _c !== void 0 ? _c : {};
+        const title = typeof body.title === 'string' ? body.title.trim().slice(0, 80) : '';
+        if (!title)
+            return ctx.badRequest('ต้องระบุชื่องาน');
+        const dog = body.dog
+            ? await (0, viewer_1.findDogByRef)(strapi, String(body.dog))
+            : await (0, viewer_1.getPrimaryDog)(strapi, user.id);
+        if (!dog)
+            return ctx.notFound('ไม่พบสุนัข');
+        if (((_d = dog.owner) === null || _d === void 0 ? void 0 : _d.id) !== user.id)
+            return ctx.forbidden('เพิ่มรายการได้เฉพาะสุนัขของตัวเอง');
+        const category = ['food', 'walk', 'groom', 'health'].includes(body.category) ? body.category : 'health';
+        const iconByCategory = {
+            food: 'restaurant',
+            walk: 'directions_walk',
+            groom: 'content_cut',
+            health: 'vaccines',
+        };
+        const last = await strapi.db.query('api::care-routine.care-routine').findOne({
+            where: { dog: dog.id },
+            orderBy: { order: 'desc' },
+        });
+        const created = await strapi.db.query('api::care-routine.care-routine').create({
+            data: {
+                dog: dog.id,
+                title,
+                scheduledTime: typeof body.scheduledTime === 'string' ? body.scheduledTime.trim().slice(0, 40) : '',
+                category,
+                icon: typeof body.icon === 'string' && body.icon ? body.icon : iconByCategory[category],
+                order: Number((_e = last === null || last === void 0 ? void 0 : last.order) !== null && _e !== void 0 ? _e : 0) + 1,
+                isActive: true,
+            },
+        });
+        ctx.body = {
+            data: {
+                documentId: created.documentId,
+                title: created.title,
+                scheduledTime: created.scheduledTime,
+                category: created.category,
+                icon: created.icon,
+                isCompleted: false,
+            },
+        };
+    },
+    /** PUT /api/care-routines/:id */
+    async updateCareRoutine(ctx) {
+        var _a, _b, _c, _d, _e;
+        const user = (0, viewer_1.requireUser)(ctx);
+        if (!user)
+            return;
+        const routine = await strapi.db.query('api::care-routine.care-routine').findOne({
+            where: { documentId: ctx.params.id },
+            populate: { dog: { populate: { owner: true } } },
+        });
+        if (!routine)
+            return ctx.notFound('ไม่พบรายการดูแล');
+        if (((_b = (_a = routine.dog) === null || _a === void 0 ? void 0 : _a.owner) === null || _b === void 0 ? void 0 : _b.id) !== user.id)
+            return ctx.forbidden('ไม่ใช่รายการของคุณ');
+        const body = (_e = (_d = (_c = ctx.request.body) === null || _c === void 0 ? void 0 : _c.data) !== null && _d !== void 0 ? _d : ctx.request.body) !== null && _e !== void 0 ? _e : {};
+        const data = {};
+        if (typeof body.title === 'string' && body.title.trim())
+            data.title = body.title.trim().slice(0, 80);
+        if (typeof body.scheduledTime === 'string')
+            data.scheduledTime = body.scheduledTime.trim().slice(0, 40);
+        if (['food', 'walk', 'groom', 'health'].includes(body.category))
+            data.category = body.category;
+        if (typeof body.icon === 'string' && body.icon)
+            data.icon = body.icon;
+        const updated = await strapi.db.query('api::care-routine.care-routine').update({
+            where: { id: routine.id },
+            data,
+        });
+        ctx.body = {
+            data: {
+                documentId: updated.documentId,
+                title: updated.title,
+                scheduledTime: updated.scheduledTime,
+                category: updated.category,
+                icon: updated.icon,
+            },
+        };
+    },
+    /** DELETE /api/care-routines/:id — ปิดการใช้งาน ไม่ลบประวัติ */
+    async deleteCareRoutine(ctx) {
+        var _a, _b;
+        const user = (0, viewer_1.requireUser)(ctx);
+        if (!user)
+            return;
+        const routine = await strapi.db.query('api::care-routine.care-routine').findOne({
+            where: { documentId: ctx.params.id },
+            populate: { dog: { populate: { owner: true } } },
+        });
+        if (!routine)
+            return ctx.notFound('ไม่พบรายการดูแล');
+        if (((_b = (_a = routine.dog) === null || _a === void 0 ? void 0 : _a.owner) === null || _b === void 0 ? void 0 : _b.id) !== user.id)
+            return ctx.forbidden('ไม่ใช่รายการของคุณ');
+        await strapi.db.query('api::care-routine.care-routine').update({
+            where: { id: routine.id },
+            data: { isActive: false },
+        });
+        ctx.body = { data: { documentId: routine.documentId, deleted: true } };
     },
 };

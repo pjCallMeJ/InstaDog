@@ -39,6 +39,10 @@
             "type": "integer",
             "default": 7000,
             "min": 1
+        },
+        "note": {
+            "type": "text",
+            "maxLength": 500
         }
     }
 }
