@@ -2,6 +2,17 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "InstaDog (phone Wi-Fi)",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "mobile",
+      "program": "lib/main.dart",
+      "toolArgs": [
+        "--dart-define=API_BASE_URL=http://10.137.82.197:1337",
+        "--device-timeout=90"
+      ]
+    },
+    {
       "name": "InstaDog (phone USB)",
       "request": "launch",
       "type": "dart",
@@ -10,17 +21,6 @@
       "preLaunchTask": "adb reverse 1337",
       "toolArgs": [
         "--dart-define=API_BASE_URL=http://127.0.0.1:1337",
-        "--device-timeout=90"
-      ]
-    },
-    {
-      "name": "InstaDog (phone Wi-Fi)",
-      "request": "launch",
-      "type": "dart",
-      "cwd": "mobile",
-      "program": "lib/main.dart",
-      "toolArgs": [
-        "--dart-define=API_BASE_URL=http://10.137.82.197:1337",
         "--device-timeout=90"
       ]
     },
