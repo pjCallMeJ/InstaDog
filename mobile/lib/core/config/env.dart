@@ -6,7 +6,7 @@ class Env {
   /// ตั้งค่าตอนรันด้วย --dart-define=API_BASE_URL=...
   /// มือถือจริงค่าเริ่มต้นคือ 127.0.0.1 ผ่าน `adb reverse`
   /// Emulator ใช้ --dart-define=API_BASE_URL=http://10.0.2.2:1337
-  /// Wi-Fi ใช้ --dart-define=API_BASE_URL=http://<LAN_IP>:1337
+  /// Wi-Fi ใช้ --dart-define=API_BASE_URL=http://LAN_IP:1337
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: kIsWeb ? 'http://localhost:1337' : 'http://127.0.0.1:1337',
