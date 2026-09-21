@@ -48,6 +48,7 @@ export default {
         progress: goal > 0 ? Math.min(1, steps / goal) : 0,
         distanceKm: Number(row.distanceKm ?? 0),
         calories: Number(row.calories ?? 0),
+        note: row.note ?? '',
         activeWalk: activeWalk
           ? { documentId: activeWalk.documentId, startedAt: activeWalk.startedAt }
           : null,
@@ -145,7 +146,15 @@ export default {
 
     await strapi.db.query('api::walk-session.walk-session').update({
       where: { id: walk.id },
-      data: { endedAt, durationSec, steps, distanceKm, calories, status: 'finished' },
+      data: {
+        endedAt,
+        durationSec,
+        steps,
+        distanceKm,
+        calories,
+        status: 'finished',
+        note: typeof body.note === 'string' ? body.note.trim().slice(0, 500) : walk.note ?? null,
+      },
     });
 
     const activity = await ensureTodayActivity(walk.dog.id);
@@ -190,6 +199,7 @@ export default {
         steps: w.steps,
         distanceKm: Number(w.distanceKm ?? 0),
         calories: w.calories,
+        note: w.note ?? '',
         routePhotoUrl: absoluteUrl(w.routePhoto?.url),
         dogNameTh: w.dog?.nameTh ?? null,
       })),
@@ -327,5 +337,132 @@ export default {
         stepGoal: goal,
       },
     };
+  },
+
+  /** PUT /api/activity/today/note — บันทึกโน้ตประจำวัน */
+  async updateTodayNote(ctx: any) {
+    const user = requireUser(ctx);
+    if (!user) return;
+
+    const dog = await resolveDog(ctx, user.id);
+    if (!dog) return ctx.notFound('ไม่พบสุนัข');
+    if (dog.owner?.id !== user.id) return ctx.forbidden('แก้โน้ตได้เฉพาะสุนัขของตัวเอง');
+
+    const body = ctx.request.body?.data ?? ctx.request.body ?? {};
+    const note = typeof body.note === 'string' ? body.note.trim().slice(0, 500) : '';
+    const row = await ensureTodayActivity(dog.id);
+    await strapi.db.query('api::daily-activity.daily-activity').update({
+      where: { id: row.id },
+      data: { note: note || null },
+    });
+
+    ctx.body = { data: { date: row.date, note } };
+  },
+
+  /** POST /api/care-routines — เพิ่มรายการดูแล */
+  async createCareRoutine(ctx: any) {
+    const user = requireUser(ctx);
+    if (!user) return;
+
+    const body = ctx.request.body?.data ?? ctx.request.body ?? {};
+    const title = typeof body.title === 'string' ? body.title.trim().slice(0, 80) : '';
+    if (!title) return ctx.badRequest('ต้องระบุชื่องาน');
+
+    const dog = body.dog
+      ? await findDogByRef(strapi, String(body.dog))
+      : await getPrimaryDog(strapi, user.id);
+    if (!dog) return ctx.notFound('ไม่พบสุนัข');
+    if (dog.owner?.id !== user.id) return ctx.forbidden('เพิ่มรายการได้เฉพาะสุนัขของตัวเอง');
+
+    const category = ['food', 'walk', 'groom', 'health'].includes(body.category) ? body.category : 'health';
+    const iconByCategory: Record<string, string> = {
+      food: 'restaurant',
+      walk: 'directions_walk',
+      groom: 'content_cut',
+      health: 'vaccines',
+    };
+
+    const last = await strapi.db.query('api::care-routine.care-routine').findOne({
+      where: { dog: dog.id },
+      orderBy: { order: 'desc' },
+    });
+
+    const created = await strapi.db.query('api::care-routine.care-routine').create({
+      data: {
+        dog: dog.id,
+        title,
+        scheduledTime: typeof body.scheduledTime === 'string' ? body.scheduledTime.trim().slice(0, 40) : '',
+        category,
+        icon: typeof body.icon === 'string' && body.icon ? body.icon : iconByCategory[category],
+        order: Number(last?.order ?? 0) + 1,
+        isActive: true,
+      },
+    });
+
+    ctx.body = {
+      data: {
+        documentId: created.documentId,
+        title: created.title,
+        scheduledTime: created.scheduledTime,
+        category: created.category,
+        icon: created.icon,
+        isCompleted: false,
+      },
+    };
+  },
+
+  /** PUT /api/care-routines/:id */
+  async updateCareRoutine(ctx: any) {
+    const user = requireUser(ctx);
+    if (!user) return;
+
+    const routine = await strapi.db.query('api::care-routine.care-routine').findOne({
+      where: { documentId: ctx.params.id },
+      populate: { dog: { populate: { owner: true } } },
+    });
+    if (!routine) return ctx.notFound('ไม่พบรายการดูแล');
+    if (routine.dog?.owner?.id !== user.id) return ctx.forbidden('ไม่ใช่รายการของคุณ');
+
+    const body = ctx.request.body?.data ?? ctx.request.body ?? {};
+    const data: Record<string, unknown> = {};
+    if (typeof body.title === 'string' && body.title.trim()) data.title = body.title.trim().slice(0, 80);
+    if (typeof body.scheduledTime === 'string') data.scheduledTime = body.scheduledTime.trim().slice(0, 40);
+    if (['food', 'walk', 'groom', 'health'].includes(body.category)) data.category = body.category;
+    if (typeof body.icon === 'string' && body.icon) data.icon = body.icon;
+
+    const updated = await strapi.db.query('api::care-routine.care-routine').update({
+      where: { id: routine.id },
+      data,
+    });
+
+    ctx.body = {
+      data: {
+        documentId: updated.documentId,
+        title: updated.title,
+        scheduledTime: updated.scheduledTime,
+        category: updated.category,
+        icon: updated.icon,
+      },
+    };
+  },
+
+  /** DELETE /api/care-routines/:id — ปิดการใช้งาน ไม่ลบประวัติ */
+  async deleteCareRoutine(ctx: any) {
+    const user = requireUser(ctx);
+    if (!user) return;
+
+    const routine = await strapi.db.query('api::care-routine.care-routine').findOne({
+      where: { documentId: ctx.params.id },
+      populate: { dog: { populate: { owner: true } } },
+    });
+    if (!routine) return ctx.notFound('ไม่พบรายการดูแล');
+    if (routine.dog?.owner?.id !== user.id) return ctx.forbidden('ไม่ใช่รายการของคุณ');
+
+    await strapi.db.query('api::care-routine.care-routine').update({
+      where: { id: routine.id },
+      data: { isActive: false },
+    });
+
+    ctx.body = { data: { documentId: routine.documentId, deleted: true } };
   },
 };

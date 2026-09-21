@@ -49,5 +49,29 @@ exports.default = {
             handler: 'activity.careInsight',
             config: { policies: [] },
         },
+        {
+            method: 'PUT',
+            path: '/activity/today/note',
+            handler: 'activity.updateTodayNote',
+            config: { policies: [] },
+        },
+        {
+            method: 'POST',
+            path: '/care-routines',
+            handler: 'activity.createCareRoutine',
+            config: { policies: [] },
+        },
+        {
+            method: 'PUT',
+            path: '/care-routines/:id',
+            handler: 'activity.updateCareRoutine',
+            config: { policies: [] },
+        },
+        {
+            method: 'DELETE',
+            path: '/care-routines/:id',
+            handler: 'activity.deleteCareRoutine',
+            config: { policies: [] },
+        },
     ],
 };

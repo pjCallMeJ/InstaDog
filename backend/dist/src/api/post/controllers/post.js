@@ -4,6 +4,7 @@ const strapi_1 = require("@strapi/strapi");
 const format_1 = require("../../../utils/format");
 const serializers_1 = require("../../../utils/serializers");
 const viewer_1 = require("../../../utils/viewer");
+const caption_writer_1 = require("../services/caption-writer");
 const MAX_MEDIA = 10;
 async function loadPost(documentId) {
     return strapi.db.query('api::post.post').findOne({
@@ -273,5 +274,34 @@ exports.default = strapi_1.factories.createCoreController('api::post.post', () =
             },
         });
         ctx.body = { data: (0, serializers_1.serializeComment)(full), commentCount };
+    },
+    /** POST /api/posts/caption-suggestions — ผู้ช่วยเขียนแคปชั่น */
+    async suggestCaption(ctx) {
+        var _a, _b, _c, _d, _e;
+        const user = (0, viewer_1.requireUser)(ctx);
+        if (!user)
+            return;
+        const body = (_c = (_b = (_a = ctx.request.body) === null || _a === void 0 ? void 0 : _a.data) !== null && _b !== void 0 ? _b : ctx.request.body) !== null && _c !== void 0 ? _c : {};
+        let dogName = typeof body.dogName === 'string' ? body.dogName.trim() : '';
+        if (!dogName && body.dog) {
+            const dog = await strapi.db.query('api::dog.dog').findOne({
+                where: { documentId: String(body.dog), owner: user.id },
+            });
+            dogName = (_d = dog === null || dog === void 0 ? void 0 : dog.nameTh) !== null && _d !== void 0 ? _d : '';
+        }
+        if (!dogName) {
+            const primary = await (0, viewer_1.getPrimaryDog)(strapi, user.id);
+            dogName = (_e = primary === null || primary === void 0 ? void 0 : primary.nameTh) !== null && _e !== void 0 ? _e : '';
+        }
+        ctx.body = {
+            data: {
+                suggestions: (0, caption_writer_1.suggestCaptions)({
+                    dogName,
+                    mood: typeof body.mood === 'string' ? body.mood : null,
+                    location: typeof body.location === 'string' ? body.location : null,
+                    hashtags: Array.isArray(body.hashtags) ? body.hashtags.map(String) : [],
+                }),
+            },
+        };
     },
 }));

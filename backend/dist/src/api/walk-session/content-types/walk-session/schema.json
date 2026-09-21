@@ -60,6 +60,10 @@
         },
         "routePoints": {
             "type": "json"
+        },
+        "note": {
+            "type": "text",
+            "maxLength": 500
         }
     }
 }

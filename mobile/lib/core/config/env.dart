@@ -4,11 +4,11 @@ class Env {
   const Env._();
 
   /// ตั้งค่าตอนรันด้วย --dart-define=API_BASE_URL=...
-  /// มือถือจริงค่าเริ่มต้นชี้ LAN ของเครื่องพัฒนา — ไม่ต้องเสียบ USB
+  /// มือถือจริงค่าเริ่มต้นชี้เซิร์ฟเวอร์ production — ไม่ต้องอยู่ Wi‑Fi เดียวกับคอม
   /// Emulator ใช้ --dart-define=API_BASE_URL=http://10.0.2.2:1337
   static const String compiledApiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: kIsWeb ? 'http://localhost:1337' : 'http://10.137.82.197:1337',
+    defaultValue: kIsWeb ? 'http://localhost:1337' : 'https://instadog.cyfrex.co.th',
   );
 
   static String _apiBaseUrl = compiledApiBaseUrl;
@@ -32,16 +32,39 @@ class Env {
     if (path.endsWith('/')) path = path.substring(0, path.length - 1);
     if (path == '/api') path = '';
 
+    final scheme = uri.scheme.isEmpty ? 'http' : uri.scheme;
+    final int? port;
+    if (uri.hasPort) {
+      port = uri.port;
+    } else if (_isPrivateHost(uri.host)) {
+      port = 1337;
+    } else {
+      port = null;
+    }
+
     return Uri(
-      scheme: uri.scheme.isEmpty ? 'http' : uri.scheme,
+      scheme: scheme,
       host: uri.host,
-      port: uri.hasPort ? uri.port : 1337,
+      port: port,
       path: path,
     ).toString();
   }
 
   static void applyBaseUrl(String raw) {
     _apiBaseUrl = normalizeBaseUrl(raw);
+  }
+
+  static bool _isPrivateHost(String host) {
+    if (host == 'localhost' || host == '127.0.0.1' || host == '10.0.2.2') {
+      return true;
+    }
+    if (host.startsWith('10.')) return true;
+    if (host.startsWith('192.168.')) return true;
+    if (host.startsWith('172.')) {
+      final second = int.tryParse(host.split('.').elementAtOrNull(1) ?? '');
+      if (second != null && second >= 16 && second <= 31) return true;
+    }
+    return false;
   }
 
   /// Strapi ส่งรูปเป็น http://localhost:1337/uploads/... ซึ่งบนมือถือคือตัวเครื่องเอง
