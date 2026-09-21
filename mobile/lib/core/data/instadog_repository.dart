@@ -283,13 +283,24 @@ class InstadogRepository {
     required int steps,
     required double distanceKm,
     required int calories,
+    String? note,
   }) async {
     await _api.post('/walks/$walkId/stop', body: {
       'durationSec': durationSec,
       'steps': steps,
       'distanceKm': distanceKm,
       'calories': calories,
+      if (note != null && note.isNotEmpty) 'note': note,
     });
+  }
+
+  Future<List<WalkLog>> walkHistory() async {
+    final json = await _api.get('/walks');
+    return _list(json['data']).map(WalkLog.fromJson).toList();
+  }
+
+  Future<void> saveTodayNote(String note) async {
+    await _api.put('/activity/today/note', body: {'note': note});
   }
 
   Future<List<CareRoutine>> careRoutines() async {
@@ -302,9 +313,54 @@ class InstadogRepository {
     return json['isCompleted'] as bool? ?? false;
   }
 
+  Future<CareRoutine> createCareRoutine({
+    required String title,
+    required String scheduledTime,
+    required String category,
+  }) async {
+    final json = await _api.post('/care-routines', body: {
+      'title': title,
+      'scheduledTime': scheduledTime,
+      'category': category,
+    });
+    return CareRoutine.fromJson(_map(json['data']));
+  }
+
+  Future<CareRoutine> updateCareRoutine(
+    String id, {
+    String? title,
+    String? scheduledTime,
+    String? category,
+  }) async {
+    final json = await _api.put('/care-routines/$id', body: {
+      'title': ?title,
+      'scheduledTime': ?scheduledTime,
+      'category': ?category,
+    });
+    return CareRoutine.fromJson(_map(json['data']));
+  }
+
+  Future<void> deleteCareRoutine(String id) => _api.delete('/care-routines/$id');
+
   Future<CareInsight> careInsight() async {
     final json = await _api.get('/care-insight');
     return CareInsight.fromJson(_map(json['data']));
+  }
+
+  Future<List<String>> suggestCaptions({
+    String? mood,
+    String? location,
+    String? dogDocumentId,
+    List<String> hashtags = const [],
+  }) async {
+    final json = await _api.post('/posts/caption-suggestions', body: {
+      if (mood != null && mood.isNotEmpty) 'mood': mood,
+      if (location != null && location.isNotEmpty) 'location': location,
+      if (dogDocumentId != null && dogDocumentId.isNotEmpty) 'dog': dogDocumentId,
+      if (hashtags.isNotEmpty) 'hashtags': hashtags,
+    });
+    final data = _map(json['data']);
+    return (data['suggestions'] as List? ?? const []).whereType<String>().toList();
   }
 
   // ---------- AI Bark ----------

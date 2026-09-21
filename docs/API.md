@@ -208,6 +208,20 @@ URL รูปทุกจุดถูกแปลงเป็น absolute URL �
 { "saved": true, "saveCount": 101 }
 ```
 
+### POST /api/posts/caption-suggestions — ผู้ช่วยเขียนแคปชั่น
+
+กฎอยู่ที่ [`src/api/post/services/caption-writer.ts`](../backend/src/api/post/services/caption-writer.ts) (ยังไม่เรียก LLM)
+
+```json
+{ "mood": "สดใสขี้เล่น", "location": "สวนลุมพินี", "dog": "<dogDocumentId>", "hashtags": ["เดินเล่น"] }
+```
+
+```json
+{ "data": { "suggestions": ["บรูนี่ พลังงานล้นตู้… #เดินเล่น", "…", "…"] } }
+```
+
+แตะคำแนะนำในแอปเพื่อใส่ลงช่องแคปชั่นได้เลย
+
 ### GET /api/posts/:documentId/comments?page=1&pageSize=20
 
 ### POST /api/posts/:documentId/comments
@@ -396,10 +410,18 @@ URL รูปทุกจุดถูกแปลงเป็น absolute URL �
 ### GET /api/activity/today
 
 ```json
-{ "data": { "date": "2026-09-20", "steps": 4820, "stepGoal": 7000, "progress": 0.688, "distanceKm": 3.13, "calories": 217, "activeWalk": null } }
+{ "data": { "date": "2026-09-20", "steps": 4820, "stepGoal": 7000, "progress": 0.688, "distanceKm": 3.13, "calories": 217, "note": "น้องตื่นเต้นตอนเช้า", "activeWalk": null } }
 ```
 
 `progress` คำนวณมาให้แล้ว วาดวงแหวนได้ทันที
+
+### PUT /api/activity/today/note
+
+```json
+{ "note": "น้องตื่นเต้นตอนเช้า ดื่มน้ำน้อยกว่าปกติ" }
+```
+
+สูงสุด 500 ตัวอักษร ว่าง = ลบโน้ต
 
 ### GET /api/activity/week
 
@@ -416,12 +438,14 @@ URL รูปทุกจุดถูกแปลงเป็น absolute URL �
 ### POST /api/walks/:id/stop
 
 ```json
-{ "durationSec": 600, "steps": 980, "distanceKm": 0.64, "calories": 44 }
+{ "durationSec": 600, "steps": 980, "distanceKm": 0.64, "calories": 44, "note": "เจอเพื่อนหมาที่สวน" }
 ```
 
-ตัวจับเวลาอยู่ฝั่งแอป เซิร์ฟเวอร์รับค่ามาสรุป แล้วบวกเข้า `daily-activity` ของวันนี้และ `accumulatedKm` ของสุนัข
+ตัวจับเวลาอยู่ฝั่งแอป เซิร์ฟเวอร์รับค่ามาสรุป แล้วบวกเข้า `daily-activity` ของวันนี้และ `accumulatedKm` ของสุนัข `note` ไม่บังคับ
 
 ### GET /api/walks — ประวัติการเดินเล่น
+
+คืนรอบที่จบแล้ว เรียงใหม่ไปเก่า พร้อม `note` `steps` `distanceKm` `calories` `dogNameTh`
 
 ### GET /api/care-routines?date=YYYY-MM-DD
 
@@ -435,6 +459,14 @@ URL รูปทุกจุดถูกแปลงเป็น absolute URL �
 ```
 
 `category` = `food` | `walk` | `groom` | `health`
+
+### POST /api/care-routines · PUT /api/care-routines/:id · DELETE /api/care-routines/:id
+
+เพิ่ม / แก้ / ปิดรายการดูแลของสุนัขตัวเอง (`DELETE` ตั้ง `isActive: false` ไม่ลบประวัติ)
+
+```json
+{ "title": "ยาหัวใจ", "scheduledTime": "21:00 น.", "category": "health" }
+```
 
 ### POST /api/care-logs/toggle
 

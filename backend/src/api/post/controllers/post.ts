@@ -12,6 +12,7 @@ import {
   requireUser,
   upsertHashtags,
 } from '../../../utils/viewer';
+import { suggestCaptions } from '../services/caption-writer';
 
 const MAX_MEDIA = 10;
 
@@ -302,5 +303,35 @@ export default factories.createCoreController('api::post.post', () => ({
     });
 
     ctx.body = { data: serializeComment(full), commentCount };
+  },
+
+  /** POST /api/posts/caption-suggestions — ผู้ช่วยเขียนแคปชั่น */
+  async suggestCaption(ctx: any) {
+    const user = requireUser(ctx);
+    if (!user) return;
+
+    const body = ctx.request.body?.data ?? ctx.request.body ?? {};
+    let dogName = typeof body.dogName === 'string' ? body.dogName.trim() : '';
+    if (!dogName && body.dog) {
+      const dog = await strapi.db.query('api::dog.dog').findOne({
+        where: { documentId: String(body.dog), owner: user.id },
+      });
+      dogName = dog?.nameTh ?? '';
+    }
+    if (!dogName) {
+      const primary = await getPrimaryDog(strapi, user.id);
+      dogName = primary?.nameTh ?? '';
+    }
+
+    ctx.body = {
+      data: {
+        suggestions: suggestCaptions({
+          dogName,
+          mood: typeof body.mood === 'string' ? body.mood : null,
+          location: typeof body.location === 'string' ? body.location : null,
+          hashtags: Array.isArray(body.hashtags) ? body.hashtags.map(String) : [],
+        }),
+      },
+    };
   },
 }));

@@ -549,6 +549,7 @@ class TodayActivity {
     required this.progress,
     required this.distanceKm,
     required this.calories,
+    this.note = '',
     this.activeWalkId,
   });
 
@@ -557,6 +558,7 @@ class TodayActivity {
   final double progress;
   final double distanceKm;
   final int calories;
+  final String note;
   final String? activeWalkId;
 
   factory TodayActivity.fromJson(Map<String, dynamic> json) => TodayActivity(
@@ -565,6 +567,7 @@ class TodayActivity {
         progress: _asDouble(json['progress']),
         distanceKm: _asDouble(json['distanceKm']),
         calories: _asInt(json['calories']),
+        note: _asString(json['note']),
         activeWalkId: (json['activeWalk'] as Map?)?['documentId'] as String?,
       );
 }
@@ -616,13 +619,53 @@ class CareRoutine {
         isCompleted: json['isCompleted'] as bool? ?? false,
       );
 
-  CareRoutine copyWith({bool? isCompleted}) => CareRoutine(
+  CareRoutine copyWith({
+    String? title,
+    String? scheduledTime,
+    String? category,
+    String? icon,
+    bool? isCompleted,
+  }) =>
+      CareRoutine(
         documentId: documentId,
-        title: title,
-        scheduledTime: scheduledTime,
-        category: category,
-        icon: icon,
+        title: title ?? this.title,
+        scheduledTime: scheduledTime ?? this.scheduledTime,
+        category: category ?? this.category,
+        icon: icon ?? this.icon,
         isCompleted: isCompleted ?? this.isCompleted,
+      );
+}
+
+class WalkLog {
+  const WalkLog({
+    required this.documentId,
+    required this.startedAt,
+    required this.durationSec,
+    required this.steps,
+    required this.distanceKm,
+    required this.calories,
+    required this.note,
+    this.dogNameTh,
+  });
+
+  final String documentId;
+  final String startedAt;
+  final int durationSec;
+  final int steps;
+  final double distanceKm;
+  final int calories;
+  final String note;
+  final String? dogNameTh;
+
+  factory WalkLog.fromJson(Map<String, dynamic> json) => WalkLog(
+        documentId: _asString(json['documentId']),
+        startedAt: _asString(json['startedAt']),
+        durationSec: _asInt(json['durationSec']),
+        steps: _asInt(json['steps']),
+        distanceKm: _asDouble(json['distanceKm']),
+        calories: _asInt(json['calories']),
+        note: _asString(json['note']),
+        dogNameTh: json['dogNameTh'] as String?,
       );
 }
 

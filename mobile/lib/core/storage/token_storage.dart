@@ -20,11 +20,17 @@ class TokenStorage {
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
-    _cached = prefs.getString(_tokenKey);
+    final compiled = Env.normalizeBaseUrl(Env.compiledApiBaseUrl);
     final savedUrl = prefs.getString(_apiUrlKey);
-    if (savedUrl != null && savedUrl.trim().isNotEmpty) {
-      Env.applyBaseUrl(savedUrl);
+    // APK ใหม่ชี้ production — ทิ้ง URL เก่าบน LAN และ JWT ของเซิร์ฟเวอร์เดิม
+    if (savedUrl != compiled) {
+      await prefs.setString(_apiUrlKey, compiled);
+      await prefs.remove(_tokenKey);
+      _cached = null;
+    } else {
+      _cached = prefs.getString(_tokenKey);
     }
+    Env.applyBaseUrl(compiled);
   }
 
   Future<void> save(String token) async {

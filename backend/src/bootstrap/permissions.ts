@@ -84,6 +84,11 @@ const AUTHENTICATED_ACTIONS = [
   'api::activity.activity.careRoutines',
   'api::activity.activity.toggleCareLog',
   'api::activity.activity.careInsight',
+  'api::activity.activity.updateTodayNote',
+  'api::activity.activity.createCareRoutine',
+  'api::activity.activity.updateCareRoutine',
+  'api::activity.activity.deleteCareRoutine',
+  'api::post.post.suggestCaption',
 
   // AI Bark
   'api::bark.bark.thread',
