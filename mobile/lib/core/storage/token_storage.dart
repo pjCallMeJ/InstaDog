@@ -1,11 +1,14 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// ที่เก็บ JWT
+import '../config/env.dart';
+
+/// ที่เก็บ JWT และที่อยู่เซิร์ฟเวอร์
 ///
 /// บนมือถือควรย้ายไป flutter_secure_storage ก่อนขึ้น production
 /// รอบนี้เป้าหมายคือรันบน Chrome จึงใช้ shared_preferences ซึ่งทำงานได้ทุกแพลตฟอร์ม
 class TokenStorage {
   static const _tokenKey = 'instadog.jwt';
+  static const _apiUrlKey = 'instadog.apiBaseUrl';
 
   String? _cached;
 
@@ -13,15 +16,33 @@ class TokenStorage {
 
   bool get hasToken => (_cached ?? '').isNotEmpty;
 
+  String get apiBaseUrl => Env.apiBaseUrl;
+
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
-    _cached = prefs.getString(_tokenKey);
+    final compiled = Env.normalizeBaseUrl(Env.compiledApiBaseUrl);
+    final savedUrl = prefs.getString(_apiUrlKey);
+    // APK ใหม่ชี้ production — ทิ้ง URL เก่าบน LAN และ JWT ของเซิร์ฟเวอร์เดิม
+    if (savedUrl != compiled) {
+      await prefs.setString(_apiUrlKey, compiled);
+      await prefs.remove(_tokenKey);
+      _cached = null;
+    } else {
+      _cached = prefs.getString(_tokenKey);
+    }
+    Env.applyBaseUrl(compiled);
   }
 
   Future<void> save(String token) async {
     _cached = token;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, token);
+  }
+
+  Future<void> saveApiBaseUrl(String url) async {
+    Env.applyBaseUrl(url);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_apiUrlKey, Env.apiBaseUrl);
   }
 
   Future<void> clear() async {

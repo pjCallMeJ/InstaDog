@@ -11,6 +11,13 @@ import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/app_icons.dart';
 import '../../../shared/widgets/state_views.dart';
 
+const _categories = [
+  ('food', 'อาหาร'),
+  ('walk', 'เดินเล่น'),
+  ('groom', 'ดูแลขน'),
+  ('health', 'สุขภาพ'),
+];
+
 class ActivityCareScreen extends ConsumerStatefulWidget {
   const ActivityCareScreen({super.key});
 
@@ -19,11 +26,15 @@ class ActivityCareScreen extends ConsumerStatefulWidget {
 }
 
 class _ActivityCareScreenState extends ConsumerState<ActivityCareScreen> {
+  final _note = TextEditingController();
+
   TodayActivity? _today;
   List<DayActivity>? _week;
   List<CareRoutine>? _routines;
+  List<WalkLog> _walks = const [];
   CareInsight? _insight;
   String? _error;
+  bool _savingNote = false;
 
   // ตัวจับเวลาเดินเล่นอยู่ฝั่งแอป ค่อยส่งยอดรวมให้เซิร์ฟเวอร์ตอนกดหยุด
   Timer? _timer;
@@ -44,6 +55,7 @@ class _ActivityCareScreenState extends ConsumerState<ActivityCareScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _note.dispose();
     super.dispose();
   }
 
@@ -56,13 +68,17 @@ class _ActivityCareScreenState extends ConsumerState<ActivityCareScreen> {
         repo.weekActivity(),
         repo.careRoutines(),
         repo.careInsight(),
+        repo.walkHistory(),
       ]);
       if (!mounted) return;
+      final today = results[0] as TodayActivity;
       setState(() {
-        _today = results[0] as TodayActivity;
+        _today = today;
         _week = results[1] as List<DayActivity>;
         _routines = results[2] as List<CareRoutine>;
         _insight = results[3] as CareInsight;
+        _walks = results[4] as List<WalkLog>;
+        if (_note.text != today.note) _note.text = today.note;
       });
     } catch (error) {
       if (mounted) setState(() => _error = '$error');
@@ -81,6 +97,11 @@ class _ActivityCareScreenState extends ConsumerState<ActivityCareScreen> {
         _elapsedSec = 0;
       });
 
+      final note = await _askNote(
+        title: 'โน้ตการเดินเล่น',
+        hint: 'เช่น น้องตื่นเต้นตอนเจอเพื่อนหมา',
+      );
+
       try {
         await repo.stopWalk(
           id,
@@ -88,6 +109,7 @@ class _ActivityCareScreenState extends ConsumerState<ActivityCareScreen> {
           steps: (duration * 1.6).round(),
           distanceKm: double.parse(((duration * 1.6) * 0.00065).toStringAsFixed(2)),
           calories: ((duration * 1.6) * 0.045).round(),
+          note: note,
         );
         await _load();
         if (mounted) {
@@ -120,6 +142,37 @@ class _ActivityCareScreenState extends ConsumerState<ActivityCareScreen> {
     }
   }
 
+  Future<void> _saveNote() async {
+    setState(() => _savingNote = true);
+    try {
+      await ref.read(repositoryProvider).saveTodayNote(_note.text.trim());
+      if (!mounted) return;
+      setState(() {
+        final today = _today;
+        if (today != null) {
+          _today = TodayActivity(
+            steps: today.steps,
+            stepGoal: today.stepGoal,
+            progress: today.progress,
+            distanceKm: today.distanceKm,
+            calories: today.calories,
+            note: _note.text.trim(),
+            activeWalkId: today.activeWalkId,
+          );
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('บันทึกโน้ตวันนี้แล้ว')),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+      }
+    } finally {
+      if (mounted) setState(() => _savingNote = false);
+    }
+  }
+
   Future<void> _toggleRoutine(CareRoutine routine) async {
     final index = _routines!.indexWhere((r) => r.documentId == routine.documentId);
     if (index < 0) return;
@@ -140,10 +193,213 @@ class _ActivityCareScreenState extends ConsumerState<ActivityCareScreen> {
     }
   }
 
+  Future<void> _addRoutine() async {
+    final draft = await _routineForm();
+    if (draft == null) return;
+    try {
+      final created = await ref.read(repositoryProvider).createCareRoutine(
+            title: draft.title,
+            scheduledTime: draft.scheduledTime,
+            category: draft.category,
+          );
+      if (!mounted) return;
+      setState(() => _routines = [...?_routines, created]);
+      final insight = await ref.read(repositoryProvider).careInsight();
+      if (mounted) setState(() => _insight = insight);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+      }
+    }
+  }
+
+  Future<void> _editRoutine(CareRoutine routine) async {
+    final draft = await _routineForm(existing: routine);
+    if (draft == null) return;
+    final index = _routines!.indexWhere((r) => r.documentId == routine.documentId);
+    if (index < 0) return;
+    try {
+      final updated = await ref.read(repositoryProvider).updateCareRoutine(
+            routine.documentId,
+            title: draft.title,
+            scheduledTime: draft.scheduledTime,
+            category: draft.category,
+          );
+      if (!mounted) return;
+      setState(() {
+        _routines![index] = updated.copyWith(isCompleted: _routines![index].isCompleted);
+      });
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+      }
+    }
+  }
+
+  Future<void> _deleteRoutine(CareRoutine routine) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('ลบรายการดูแล?'),
+        content: Text('ต้องการลบ “${routine.title}” ออกจากตารางวันนี้'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('ยกเลิก')),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.like),
+            child: const Text('ลบ'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await ref.read(repositoryProvider).deleteCareRoutine(routine.documentId);
+      if (!mounted) return;
+      setState(() => _routines = _routines!.where((r) => r.documentId != routine.documentId).toList());
+      final insight = await ref.read(repositoryProvider).careInsight();
+      if (mounted) setState(() => _insight = insight);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+      }
+    }
+  }
+
+  Future<String?> _askNote({required String title, String hint = ''}) async {
+    if (!mounted) return null;
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: TextField(
+          controller: controller,
+          maxLines: 4,
+          maxLength: 500,
+          decoration: InputDecoration(hintText: hint),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, ''), child: const Text('ข้าม')),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('บันทึก'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    return result;
+  }
+
+  Future<({String title, String scheduledTime, String category})?> _routineForm({
+    CareRoutine? existing,
+  }) async {
+    final title = TextEditingController(text: existing?.title ?? '');
+    final time = TextEditingController(text: existing?.scheduledTime ?? '');
+    var category = existing?.category ?? 'health';
+
+    final result = await showDialog<({String title, String scheduledTime, String category})>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: Text(existing == null ? 'เพิ่มรายการดูแล' : 'แก้ไขรายการดูแล'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: title,
+                    maxLength: 80,
+                    decoration: const InputDecoration(
+                      labelText: 'ชื่องาน',
+                      hintText: 'เช่น อาหารเช้า + วิตามิน',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: time,
+                    decoration: InputDecoration(
+                      labelText: 'เวลา',
+                      hintText: '07:30 น.',
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.schedule_rounded),
+                        onPressed: () async {
+                          final picked = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.now(),
+                          );
+                          if (picked == null) return;
+                          time.text =
+                              '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')} น.';
+                          setDialogState(() {});
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text('หมวด', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    children: [
+                      for (final item in _categories)
+                        ChoiceChip(
+                          label: Text(item.$2, style: const TextStyle(fontSize: 12)),
+                          selected: category == item.$1,
+                          showCheckmark: false,
+                          selectedColor: AppColors.amber,
+                          labelStyle: TextStyle(
+                            color: category == item.$1 ? Colors.white : AppColors.textSecondary,
+                          ),
+                          onSelected: (_) => setDialogState(() => category = item.$1),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('ยกเลิก')),
+              FilledButton(
+                onPressed: () {
+                  final name = title.text.trim();
+                  if (name.isEmpty) return;
+                  Navigator.pop(context, (
+                    title: name,
+                    scheduledTime: time.text.trim(),
+                    category: category,
+                  ));
+                },
+                child: Text(existing == null ? 'เพิ่ม' : 'บันทึก'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    title.dispose();
+    time.dispose();
+    return result;
+  }
+
   String _formatDuration(int seconds) {
     final m = (seconds ~/ 60).toString().padLeft(2, '0');
     final s = (seconds % 60).toString().padLeft(2, '0');
     return '$m:$s';
+  }
+
+  String _formatWalkWhen(String iso) {
+    final dt = DateTime.tryParse(iso)?.toLocal();
+    if (dt == null || iso.isEmpty) return '';
+    final d = dt.day.toString().padLeft(2, '0');
+    final mo = dt.month.toString().padLeft(2, '0');
+    final h = dt.hour.toString().padLeft(2, '0');
+    final mi = dt.minute.toString().padLeft(2, '0');
+    return '$d/$mo $h:$mi';
   }
 
   @override
@@ -248,6 +504,45 @@ class _ActivityCareScreenState extends ConsumerState<ActivityCareScreen> {
           ),
 
           const SizedBox(height: 18),
+          const _SectionTitle('โน้ตวันนี้'),
+          Container(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
+                  controller: _note,
+                  maxLines: 3,
+                  maxLength: 500,
+                  decoration: const InputDecoration(
+                    hintText: 'จดอาการ อารมณ์ หรือสิ่งที่สังเกตวันนี้',
+                    border: InputBorder.none,
+                    counterText: '',
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: _savingNote ? null : _saveNote,
+                    child: _savingNote
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('บันทึกโน้ต'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 18),
           const _SectionTitle('แนวโน้มสัปดาห์นี้'),
           Container(
             height: 160,
@@ -302,6 +597,12 @@ class _ActivityCareScreenState extends ConsumerState<ActivityCareScreen> {
           _SectionTitle(
             'ตารางดูแลวันนี้',
             trailing: '${_routines!.where((r) => r.isCompleted).length}/${_routines!.length}',
+            action: IconButton(
+              tooltip: 'เพิ่มรายการ',
+              onPressed: _addRoutine,
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.add_rounded),
+            ),
           ),
           Container(
             decoration: BoxDecoration(
@@ -309,17 +610,67 @@ class _ActivityCareScreenState extends ConsumerState<ActivityCareScreen> {
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: AppColors.border),
             ),
-            child: Column(
-              children: [
-                for (var i = 0; i < _routines!.length; i++) ...[
-                  if (i > 0) const Divider(height: 1, indent: 56),
-                  _RoutineTile(
-                    routine: _routines![i],
-                    onToggle: () => _toggleRoutine(_routines![i]),
+            child: _routines!.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 22),
+                    child: Column(
+                      children: [
+                        const Text(
+                          'ยังไม่มีรายการดูแล',
+                          style: TextStyle(color: AppColors.textMuted),
+                        ),
+                        TextButton.icon(
+                          onPressed: _addRoutine,
+                          icon: const Icon(Icons.add_rounded, size: 18),
+                          label: const Text('เพิ่มรายการแรก'),
+                        ),
+                      ],
+                    ),
+                  )
+                : Column(
+                    children: [
+                      for (var i = 0; i < _routines!.length; i++) ...[
+                        if (i > 0) const Divider(height: 1, indent: 56),
+                        _RoutineTile(
+                          routine: _routines![i],
+                          onToggle: () => _toggleRoutine(_routines![i]),
+                          onEdit: () => _editRoutine(_routines![i]),
+                          onDelete: () => _deleteRoutine(_routines![i]),
+                        ),
+                      ],
+                    ],
                   ),
-                ],
-              ],
+          ),
+
+          const SizedBox(height: 18),
+          const _SectionTitle('ประวัติการเดินเล่น'),
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColors.border),
             ),
+            child: _walks.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 22),
+                    child: Text(
+                      'ยังไม่มีบันทึกการเดินเล่น',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.textMuted),
+                    ),
+                  )
+                : Column(
+                    children: [
+                      for (var i = 0; i < _walks.length; i++) ...[
+                        if (i > 0) const Divider(height: 1, indent: 56),
+                        _WalkTile(
+                          walk: _walks[i],
+                          when: _formatWalkWhen(_walks[i].startedAt),
+                          duration: _formatDuration(_walks[i].durationSec),
+                        ),
+                      ],
+                    ],
+                  ),
           ),
         ],
       ),
@@ -392,17 +743,24 @@ class _WeekChart extends StatelessWidget {
 }
 
 class _RoutineTile extends StatelessWidget {
-  const _RoutineTile({required this.routine, required this.onToggle});
+  const _RoutineTile({
+    required this.routine,
+    required this.onToggle,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   final CareRoutine routine;
   final VoidCallback onToggle;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onToggle,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         child: Row(
           children: [
             Container(
@@ -445,6 +803,18 @@ class _RoutineTile extends StatelessWidget {
               color: routine.isCompleted ? AppColors.success : AppColors.accent3,
               size: 22,
             ),
+            PopupMenuButton<String>(
+              tooltip: 'จัดการรายการ',
+              onSelected: (value) {
+                if (value == 'edit') onEdit();
+                if (value == 'delete') onDelete();
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(value: 'edit', child: Text('แก้ไข')),
+                PopupMenuItem(value: 'delete', child: Text('ลบ')),
+              ],
+              icon: const Icon(Icons.more_vert_rounded, size: 20, color: AppColors.textMuted),
+            ),
           ],
         ),
       ),
@@ -452,11 +822,65 @@ class _RoutineTile extends StatelessWidget {
   }
 }
 
+class _WalkTile extends StatelessWidget {
+  const _WalkTile({
+    required this.walk,
+    required this.when,
+    required this.duration,
+  });
+
+  final WalkLog walk;
+  final String when;
+  final String duration;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: const BoxDecoration(
+              color: AppColors.surfaceAlt,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.directions_walk_rounded, size: 16, color: AppColors.textSecondary),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  when.isEmpty ? 'เดินเล่น' : when,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$duration · ${walk.steps} ก้าว · ${walk.distanceKm.toStringAsFixed(2)} กม.',
+                  style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted),
+                ),
+                if (walk.note.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(walk.note, style: const TextStyle(fontSize: 13, height: 1.4)),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text, {this.trailing});
+  const _SectionTitle(this.text, {this.trailing, this.action});
 
   final String text;
   final String? trailing;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -471,6 +895,7 @@ class _SectionTitle extends StatelessWidget {
           const Spacer(),
           if (trailing != null)
             Text(trailing!, style: const TextStyle(fontSize: 12.5, color: AppColors.textMuted)),
+          ?action,
         ],
       ),
     );

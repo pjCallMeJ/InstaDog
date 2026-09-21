@@ -45,6 +45,16 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   String? _mood;
   String? _dogDocumentId;
   bool _publishing = false;
+  bool _suggesting = false;
+  List<String> _suggestions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _caption.addListener(() {
+      if (mounted) setState(() {});
+    });
+  }
 
   @override
   void dispose() {
@@ -85,6 +95,31 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     });
   }
 
+  Future<void> _suggestCaptions() async {
+    setState(() => _suggesting = true);
+    try {
+      final suggestions = await ref.read(repositoryProvider).suggestCaptions(
+            mood: _mood,
+            location: _location.text.trim(),
+            dogDocumentId: _dogDocumentId,
+            hashtags: _hashtags,
+          );
+      if (!mounted) return;
+      setState(() => _suggestions = suggestions);
+      if (suggestions.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('ยังไม่มีคำแนะนำในตอนนี้')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+      }
+    } finally {
+      if (mounted) setState(() => _suggesting = false);
+    }
+  }
+
   Future<void> _publish() async {
     if (_images.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -119,6 +154,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         _caption.clear();
         _location.clear();
         _mood = null;
+        _suggestions = [];
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -289,6 +325,51 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                 ),
             ],
           ),
+
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: _suggesting || _publishing ? null : _suggestCaptions,
+              icon: _suggesting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.auto_awesome_rounded, size: 18),
+              label: Text(_suggesting ? 'กำลังคิดแคปชั่น...' : 'AI ช่วยเขียนแคปชั่น'),
+            ),
+          ),
+          if (_suggestions.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Column(
+                children: [
+                  for (final suggestion in _suggestions)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: InkWell(
+                        onTap: () {
+                          _caption.text = suggestion;
+                          setState(() {});
+                        },
+                        borderRadius: BorderRadius.circular(14),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.amberSoft,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Text(suggestion, style: const TextStyle(fontSize: 13, height: 1.4)),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
 
           const SizedBox(height: 16),
           const Divider(),
