@@ -1,0 +1,103 @@
+{
+    "kind": "collectionType",
+    "collectionName": "posts",
+    "info": {
+        "singularName": "post",
+        "pluralName": "posts",
+        "displayName": "Post",
+        "description": "โพสต์รูปสุนัขที่แสดงบนฟีด หน้าสำรวจ และกริดโปรไฟล์"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "attributes": {
+        "author": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "plugin::users-permissions.user"
+        },
+        "dog": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "api::dog.dog",
+            "inversedBy": "posts"
+        },
+        "caption": {
+            "type": "text",
+            "maxLength": 2200
+        },
+        "media": {
+            "type": "media",
+            "multiple": true,
+            "required": true,
+            "allowedTypes": ["images"]
+        },
+        "location": {
+            "type": "string",
+            "maxLength": 120
+        },
+        "latitude": {
+            "type": "decimal"
+        },
+        "longitude": {
+            "type": "decimal"
+        },
+        "mood": {
+            "type": "string",
+            "maxLength": 40
+        },
+        "aiMoodSummary": {
+            "type": "text",
+            "maxLength": 300
+        },
+        "visibility": {
+            "type": "enumeration",
+            "enum": ["public", "followers", "private"],
+            "default": "public"
+        },
+        "likeCount": {
+            "type": "integer",
+            "default": 0,
+            "min": 0
+        },
+        "commentCount": {
+            "type": "integer",
+            "default": 0,
+            "min": 0
+        },
+        "saveCount": {
+            "type": "integer",
+            "default": 0,
+            "min": 0
+        },
+        "hashtags": {
+            "type": "relation",
+            "relation": "manyToMany",
+            "target": "api::hashtag.hashtag",
+            "inversedBy": "posts"
+        },
+        "taggedDogs": {
+            "type": "relation",
+            "relation": "manyToMany",
+            "target": "api::dog.dog"
+        },
+        "comments": {
+            "type": "relation",
+            "relation": "oneToMany",
+            "target": "api::comment.comment",
+            "mappedBy": "post"
+        },
+        "likes": {
+            "type": "relation",
+            "relation": "oneToMany",
+            "target": "api::like.like",
+            "mappedBy": "post"
+        },
+        "exploreCategory": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "api::explore-category.explore-category",
+            "inversedBy": "posts"
+        }
+    }
+}

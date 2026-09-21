@@ -1,0 +1,26 @@
+{
+    "kind": "collectionType",
+    "collectionName": "likes",
+    "info": {
+        "singularName": "like",
+        "pluralName": "likes",
+        "displayName": "Like",
+        "description": "การกดถูกใจโพสต์ หนึ่งผู้ใช้ต่อหนึ่งโพสต์ได้ครั้งเดียว"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "attributes": {
+        "user": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "plugin::users-permissions.user"
+        },
+        "post": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "api::post.post",
+            "inversedBy": "likes"
+        }
+    }
+}

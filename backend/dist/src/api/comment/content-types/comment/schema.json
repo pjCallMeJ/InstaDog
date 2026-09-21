@@ -1,0 +1,46 @@
+{
+    "kind": "collectionType",
+    "collectionName": "comments",
+    "info": {
+        "singularName": "comment",
+        "pluralName": "comments",
+        "displayName": "Comment",
+        "description": "ความคิดเห็นใต้โพสต์"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "attributes": {
+        "post": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "api::post.post",
+            "inversedBy": "comments"
+        },
+        "author": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "plugin::users-permissions.user"
+        },
+        "dog": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "api::dog.dog"
+        },
+        "text": {
+            "type": "text",
+            "required": true,
+            "maxLength": 1000
+        },
+        "parent": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "api::comment.comment"
+        },
+        "likeCount": {
+            "type": "integer",
+            "default": 0,
+            "min": 0
+        }
+    }
+}

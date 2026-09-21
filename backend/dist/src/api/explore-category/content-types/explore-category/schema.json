@@ -1,0 +1,43 @@
+{
+    "kind": "collectionType",
+    "collectionName": "explore_categories",
+    "info": {
+        "singularName": "explore-category",
+        "pluralName": "explore-categories",
+        "displayName": "Explore Category",
+        "description": "หมวดบนหน้าสำรวจ ระเบียนชุดนี้คือสิ่งที่กำหนดจำนวนแท็บของ TabController"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "attributes": {
+        "nameTh": {
+            "type": "string",
+            "required": true,
+            "maxLength": 40
+        },
+        "slug": {
+            "type": "uid",
+            "targetField": "nameTh",
+            "required": true
+        },
+        "icon": {
+            "type": "string",
+            "default": "pets"
+        },
+        "order": {
+            "type": "integer",
+            "default": 0
+        },
+        "isDefault": {
+            "type": "boolean",
+            "default": false
+        },
+        "posts": {
+            "type": "relation",
+            "relation": "oneToMany",
+            "target": "api::post.post",
+            "mappedBy": "exploreCategory"
+        }
+    }
+}

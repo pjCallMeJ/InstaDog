@@ -1,0 +1,44 @@
+{
+    "kind": "collectionType",
+    "collectionName": "daily_activities",
+    "info": {
+        "singularName": "daily-activity",
+        "pluralName": "daily-activities",
+        "displayName": "Daily Activity",
+        "description": "สรุปกิจกรรมรายวันของสุนัข ใช้วาดวงแหวนเป้าหมายและกราฟสัปดาห์"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "attributes": {
+        "dog": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "api::dog.dog"
+        },
+        "date": {
+            "type": "date",
+            "required": true
+        },
+        "steps": {
+            "type": "integer",
+            "default": 0,
+            "min": 0
+        },
+        "distanceKm": {
+            "type": "decimal",
+            "default": 0,
+            "min": 0
+        },
+        "calories": {
+            "type": "integer",
+            "default": 0,
+            "min": 0
+        },
+        "stepGoal": {
+            "type": "integer",
+            "default": 7000,
+            "min": 1
+        }
+    }
+}

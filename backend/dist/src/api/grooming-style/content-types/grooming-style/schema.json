@@ -1,0 +1,43 @@
+{
+    "kind": "collectionType",
+    "collectionName": "grooming_styles",
+    "info": {
+        "singularName": "grooming-style",
+        "pluralName": "grooming-styles",
+        "displayName": "Grooming Style",
+        "description": "ทรงขนที่แนะนำในแท็บ AI ทรงขน"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "attributes": {
+        "name": {
+            "type": "string",
+            "required": true,
+            "maxLength": 80
+        },
+        "description": {
+            "type": "text",
+            "maxLength": 400
+        },
+        "image": {
+            "type": "media",
+            "multiple": false,
+            "allowedTypes": ["images"]
+        },
+        "durationMinutes": {
+            "type": "integer",
+            "default": 60,
+            "min": 0
+        },
+        "priceThb": {
+            "type": "integer",
+            "default": 0,
+            "min": 0
+        },
+        "order": {
+            "type": "integer",
+            "default": 0
+        }
+    }
+}

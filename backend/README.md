@@ -1,4 +1,17 @@
-# 🚀 Getting started with Strapi
+# InstaDog API (Strapi 5)
+
+วิธีรันทั้งโปรเจกต์ บัญชีทดสอบ และการเชื่อมมือถืออยู่ที่ [../README.md](../README.md)
+สัญญา API อยู่ที่ [../docs/API.md](../docs/API.md)
+
+```bash
+npm run develop
+```
+
+Admin: http://localhost:1337/admin · API: http://localhost:1337/api
+
+---
+
+# Getting started with Strapi
 
 Strapi comes with a full featured [Command Line Interface](https://docs.strapi.io/dev-docs/cli) (CLI) which lets you scaffold and manage your project in seconds.
 

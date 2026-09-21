@@ -1,0 +1,32 @@
+{
+    "kind": "collectionType",
+    "collectionName": "hashtags",
+    "info": {
+        "singularName": "hashtag",
+        "pluralName": "hashtags",
+        "displayName": "Hashtag",
+        "description": "แฮชแท็กที่ใช้ในแคปชั่น ใช้กับการค้นหาและหน้าสำรวจ"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "attributes": {
+        "name": {
+            "type": "string",
+            "required": true,
+            "unique": true,
+            "maxLength": 80
+        },
+        "postCount": {
+            "type": "integer",
+            "default": 0,
+            "min": 0
+        },
+        "posts": {
+            "type": "relation",
+            "relation": "manyToMany",
+            "target": "api::post.post",
+            "mappedBy": "hashtags"
+        }
+    }
+}

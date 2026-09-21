@@ -1,0 +1,45 @@
+{
+    "kind": "collectionType",
+    "collectionName": "stories",
+    "info": {
+        "singularName": "story",
+        "pluralName": "stories",
+        "displayName": "Story",
+        "description": "สตอรี่วงกลมบนหัวฟีด หมดอายุใน 24 ชั่วโมง"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "attributes": {
+        "dog": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "api::dog.dog",
+            "inversedBy": "stories"
+        },
+        "author": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "plugin::users-permissions.user"
+        },
+        "media": {
+            "type": "media",
+            "multiple": false,
+            "required": true,
+            "allowedTypes": ["images"]
+        },
+        "caption": {
+            "type": "string",
+            "maxLength": 200
+        },
+        "expiresAt": {
+            "type": "datetime"
+        },
+        "views": {
+            "type": "relation",
+            "relation": "oneToMany",
+            "target": "api::story-view.story-view",
+            "mappedBy": "story"
+        }
+    }
+}
